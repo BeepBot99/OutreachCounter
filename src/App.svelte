@@ -1,50 +1,59 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import appLogo from '/favicon.svg'
-  import Counter from './lib/Counter.svelte'
-  import PWABadge from './lib/PWABadge.svelte'
+    import Count from './lib/Count.svelte'
+    import Setup from "./lib/Setup.svelte";
+    import Active from "./lib/Active.svelte";
+    import {onMount} from "svelte";
+    import alarm from "/alarm.mp3"
+
+    const sound = new Audio(alarm);
+    sound.preload = "auto";
+    sound.load();
+
+    let timerOn = $state(false);
+    let drivers = $state(0);
+    let minutes = $state(1);
+    let seconds = $state(30);
+
+    onMount(() => {
+       drivers = parseInt(localStorage.getItem("drivers") ?? "0") || 0
+    });
+
+    $effect(() => {
+       localStorage.setItem("drivers", drivers.toString());
+    });
+
+    function start() {
+        timerOn = true;
+        drivers++;
+    }
+
+    function stop() {
+        timerOn = false;
+    }
+
+    function finish() {
+        stop();
+        sound.play();
+    }
+
+    function cancel() {
+        stop();
+        drivers--;
+    }
+
+    function reset() {
+        minutes = 1;
+        seconds = 30;
+        drivers = 0;
+    }
 </script>
 
-<main>
-  <div>
-    <a href="https://vite.dev" target="_blank" rel="noreferrer">
-      <img src={appLogo} class="logo" alt="Outreach Counter Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Outreach Counter</h1>
+<div class="h-dvh flex flex-col">
+    <Count bind:drivers/>
 
-  <div class="card">
-    <Counter />
-  </div>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
-</main>
-
-<PWABadge />
-
-<style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
-  }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
-  }
-</style>
+    {#if timerOn}
+        <Active onStop={stop} onCancel={cancel} onFinish={finish} {minutes} {seconds}/>
+    {:else}
+        <Setup onStart={start} onReset={reset} bind:minutes bind:seconds/>
+    {/if}
+</div>
